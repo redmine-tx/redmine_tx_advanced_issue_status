@@ -1,0 +1,24 @@
+<p>
+  <label for="settings_enable_hybrid_logic">상태에 따른 진척도 업데이트 활성화</label>
+  <%= check_box_tag 'settings[enable_hybrid_logic]', true, @settings['enable_hybrid_logic'] %>
+</p>
+
+<p>
+  <label for="settings_enable_parent_auto_update">자식 일감이 시작되면 부모 일감도 자동으로 시작</label>
+  <%= check_box_tag 'settings[enable_parent_auto_update]', true, @settings['enable_parent_auto_update'] %>
+</p>
+
+<p>
+  <label for="settings_enable_auto_sync_target_version">부모 일감의 목표버전을 바꾸면 자식 일감의 목표버전도 변경</label>
+  <%= check_box_tag 'settings[enable_auto_sync_target_version]', true, @settings['enable_auto_sync_target_version'] %>
+</p>
+
+<p>
+  <label for="settings_enable_auto_sync_priority">부모 일감의 중요도를 바꾸면 자식 일감의 중요도도 변경</label>
+  <%= check_box_tag 'settings[enable_auto_sync_priority]', true, @settings['enable_auto_sync_priority'] %>
+</p>
+
+<p>
+  <label for="settings_enable_auto_sync_tag">부모 일감의 태그를 바꾸면 자식 일감의 태그도 변경</label>
+  <%= check_box_tag 'settings[enable_auto_sync_tag]', true, @settings['enable_auto_sync_tag'] %>
+</p>

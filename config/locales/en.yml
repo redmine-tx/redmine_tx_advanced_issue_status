@@ -1,0 +1,25 @@
+# English strings go here for Rails i18n
+en:
+  # my_label: "My label"
+  field_stage: "Stage"
+
+  label_stage_discarded: "Discarded"
+  label_stage_postponed: "Postponed"
+  label_stage_new: "New"
+  label_stage_scoping: "Scoping"
+  label_stage_in_progress: "In Progress"
+  label_stage_review: "Review"  
+  label_stage_implemented: "Implemented"
+  label_stage_qa: "QA"
+  label_stage_completed: "Completed"
+ko:
+  field_stage: "단계"
+  label_stage_discarded: "폐기"
+  label_stage_postponed: "보류"
+  label_stage_new: "신규"
+  label_stage_scoping: "검토"
+  label_stage_in_progress: "진행중"
+  label_stage_review: "검수"
+  label_stage_implemented: "구현끝"
+  label_stage_qa: "QA"
+  label_stage_completed: "종결"
