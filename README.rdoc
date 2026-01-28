@@ -1,3 +1,265 @@
-= redmine_tx_parent_doneratio
+= Redmine Tx Advanced Issue Status
 
-Description goes here
+== 프로젝트 개요
+
+이 플러그인은 Redmine의 기본 이슈 상태(IssueStatus)에 의미를 부여하는 "Redmine Tx Advanced Issue Status" 플러그인입니다. Ruby로 작성되었으며 표준 Redmine 플러그인 구조를 따릅니다.
+
+=== 문제점과 해결책
+
+*기존 문제점:*
+* 레드마인의 기본 이슈 상태에는 "Is closed" 플래그만 존재하여 이슈가 어떤 단계에 있는지 파악하기 어려움
+* 이슈의 진행 상태를 프로그래밍적으로 구분하고 활용하기 어려움
+
+*해결책:*
+* IssueStatus 모델에 +stage+ 필드를 추가하여 이슈 상태에 단계별 의미를 부여
+* 단계별 판단 메소드를 제공하여 다른 플러그인에서 쉽게 활용 가능
+
+== 핵심 개념
+
+=== Stage 단계 정의
+
+플러그인은 이슈 상태를 9개의 단계로 분류합니다:
+
+  STAGE_DISCARDED   = -2  # 폐기됨
+  STAGE_POSTPONED   = -1  # 보류됨
+  STAGE_NEW         = 0   # 신규
+  STAGE_SCOPING     = 1   # 검토중
+  STAGE_IN_PROGRESS = 2   # 진행중
+  STAGE_REVIEW      = 3   # 검수중
+  STAGE_IMPLEMENTED = 4   # 구현끝
+  STAGE_QA          = 5   # QA
+  STAGE_COMPLETED   = 6   # 종결
+
+=== 단계별 의미
+
+* *DISCARDED (-2)*: 이슈가 폐기되어 더 이상 작업하지 않음
+* *POSTPONED (-1)*: 이슈가 보류되어 당분간 작업하지 않음
+* *NEW (0)*: 신규 생성된 이슈로 아직 작업이 시작되지 않음
+* *SCOPING (1)*: 이슈의 범위와 요구사항을 검토하는 단계
+* *IN_PROGRESS (2)*: 이슈를 적극적으로 작업 중인 단계
+* *REVIEW (3)*: 작업이 완료되어 검수를 받는 단계
+* *IMPLEMENTED (4)*: 구현이 완료된 단계
+* *QA (5)*: 품질 보증 테스트를 진행하는 단계
+* *COMPLETED (6)*: 모든 작업이 완료되어 종결된 단계
+
+== API 사용법
+
+=== IssueStatus 클래스 메소드
+
+각 이슈 상태를 판단하는 클래스 메소드가 제공됩니다:
+
+  # 상태 ID로 단계 확인
+  IssueStatus.is_new?(status_id)         # 신규인가?
+  IssueStatus.is_postponed?(status_id)   # 보류인가?
+  IssueStatus.is_discarded?(status_id)   # 폐기인가?
+  IssueStatus.is_in_progress?(status_id) # 진행중인가? (IN_PROGRESS 또는 REVIEW)
+  IssueStatus.is_in_review?(status_id)   # 검수중인가?
+  IssueStatus.is_implemented?(status_id) # 구현완료인가? (IMPLEMENTED 이상)
+  IssueStatus.is_qa?(status_id)          # QA 단계인가?
+  IssueStatus.is_completed?(status_id)   # 종결되었는가?
+
+  # 특정 단계의 모든 상태 ID 목록 얻기
+  IssueStatus.new_ids          # 신규 상태 ID 배열
+  IssueStatus.discarded_ids    # 폐기 상태 ID 배열
+  IssueStatus.postponed_ids    # 보류 상태 ID 배열
+  IssueStatus.in_progress_ids  # 진행중 상태 ID 배열
+  IssueStatus.implemented_ids  # 구현완료 상태 ID 배열
+  IssueStatus.in_review_ids    # 검수중 상태 ID 배열
+  IssueStatus.completed_ids    # 종결 상태 ID 배열
+
+  # 상태 ID로 상태 이름이나 단계 얻기
+  IssueStatus.get_name(status_id)   # 상태 이름
+  IssueStatus.get_stage(status_id)  # stage 값
+
+=== Issue 인스턴스 메소드
+
+Issue 객체에서도 동일한 메소드를 사용할 수 있습니다:
+
+  issue = Issue.find(1)
+
+  issue.is_new?         # 신규인가?
+  issue.is_postponed?   # 보류인가?
+  issue.is_discarded?   # 폐기인가?
+  issue.is_in_progress? # 진행중인가?
+  issue.is_in_review?   # 검수중인가?
+  issue.is_implemented? # 구현완료인가?
+  issue.is_qa?          # QA 단계인가?
+  issue.is_completed?   # 종결되었는가?
+
+=== IssueStatus 인스턴스 메소드
+
+IssueStatus 객체에서도 사용 가능:
+
+  status = IssueStatus.find(1)
+
+  status.is_new?         # 신규인가?
+  status.is_postponed?   # 보류인가?
+  status.is_discarded?   # 폐기인가?
+  status.is_in_progress? # 진행중인가?
+  status.is_in_review?   # 검수중인가?
+  status.is_implemented? # 구현완료인가?
+  status.is_qa?          # QA 단계인가?
+  status.is_completed?   # 종결되었는가?
+  status.stage_name      # 단계 이름 (i18n 적용)
+
+== 실제 사용 예제
+
+=== redmine_tx_milestone 플러그인에서의 사용 사례
+
+1. *간트 차트에서 폐기된 이슈 필터링*
+
+  # 폐기된 이슈 제외
+  issues = Issue.where(...).select { |issue| !IssueStatus.is_discarded?(issue.status_id) }
+
+2. *이슈 스타일 적용*
+
+  def get_issue_style(issue)
+    if IssueStatus.is_postponed?(issue.status_id)
+      'color: #860;'
+    elsif IssueStatus.is_discarded?(issue.status_id)
+      'color: #aaa; text-decoration: line-through; opacity: 0.8;'
+    elsif IssueStatus.is_implemented?(issue.status_id)
+      'color: #aaa;'
+    elsif IssueStatus.is_in_progress?(issue.status_id)
+      'font-weight: bold;'
+    end
+  end
+
+3. *이슈 아이콘 표시*
+
+  <% if IssueStatus.is_discarded?(issue.status_id) %>
+    <span>🗑️</span>
+  <% elsif IssueStatus.is_implemented?(issue.status_id) %>
+    <span>✓</span>
+  <% elsif IssueStatus.is_in_review?(issue.status_id) %>
+    🔍
+  <% elsif IssueStatus.is_new?(issue.status_id) && issue.start_date <= Date.today %>
+    ⚠️
+  <% end %>
+
+4. *구현 완료된 이슈 제외하기*
+
+  # 아직 구현이 완료되지 않은 이슈만 조회
+  active_issues = Issue.where.not(status_id: IssueStatus.implemented_ids)
+
+5. *자동 스케줄링에서 확정된 이슈 판단*
+
+  # 진행중이거나 일정이 확정된 이슈
+  fixed_issues = issues.select { |issue| 
+    issue.is_in_progress? || (issue.start_date.present? && issue.due_date.present?)
+  }
+
+6. *일정 요약에서 진행중인 이슈만 강조*
+
+  in_progress_status_ids = IssueStatus.new_ids + IssueStatus.in_progress_ids + IssueStatus.in_review_ids
+  is_in_progress = in_progress_status_ids.include?(status_id)
+  font_color = is_in_progress ? "#555555" : "#AAAAAA"
+
+== 추가 기능
+
+=== 1. Done Ratio 자동 업데이트
+
+설정이 활성화되면 이슈 상태 변경 시 자식이 없는 말단 이슈의 완료 비율(done_ratio)이 자동으로 업데이트됩니다:
+
+  # enable_hybrid_logic 설정이 true일 때
+  # 상태 변경 시 상태의 default_done_ratio 값으로 done_ratio 자동 설정
+
+=== 2. 부모-자식 이슈 동기화
+
+플러그인 설정에 따라 다양한 동기화 기능을 제공합니다:
+
+  # enable_auto_sync_target_version: 부모 이슈의 버전이 변경되면 자식 이슈의 버전도 변경
+  # enable_auto_sync_priority: 부모 이슈의 중요도가 변경되면 자식 이슈의 중요도도 변경
+  # enable_auto_sync_tag: 부모 이슈의 태그가 변경되면 자식 이슈의 태그도 동기화
+  # enable_parent_auto_update: 자식 이슈가 시작되면 부모 이슈도 자동으로 시작 상태로 변경
+
+== 다른 플러그인에서 활용하기
+
+=== 권장 사용 패턴
+
+1. *이슈 필터링*
+
+  # 활성화된 이슈만 (폐기/보류 제외)
+  active_issues = issues.reject { |i| i.is_discarded? || i.is_postponed? }
+
+  # 작업이 필요한 이슈만 (신규 + 진행중)
+  work_needed = issues.select { |i| i.is_new? || i.is_in_progress? }
+
+2. *이슈 상태별 집계*
+
+  # 단계별 이슈 개수
+  stats = {
+    new: issues.count { |i| i.is_new? },
+    in_progress: issues.count { |i| i.is_in_progress? },
+    implemented: issues.count { |i| i.is_implemented? },
+    completed: issues.count { |i| i.is_completed? }
+  }
+
+3. *조건부 로직*
+
+  # 이슈가 구현 완료된 경우에만 특정 동작 수행
+  if issue.is_implemented?
+    # 구현 완료 후 처리
+  end
+
+  # 진행 중인 이슈에 대한 경고
+  if issue.is_in_progress? && issue.due_date < Date.today
+    # 마감일 경고
+  end
+
+== 아키텍처
+
+=== 데이터베이스 변경
+
+  # Migration: 1_add_stage_to_issue_status.rb
+  # issue_statuses 테이블에 stage 컬럼(integer) 추가
+
+=== 주요 파일
+
+* *init.rb*: 플러그인 초기화 및 설정 정의
+* *lib/tx_advanced_issue_status_helper.rb*: 상수 정의 및 단계 판단 헬퍼 메소드
+* *lib/tx_advanced_issue_status_issue_status_patch.rb*: IssueStatus 모델 패치
+* *lib/tx_advanced_issue_status_issue_patch.rb*: Issue 모델 패치 (done_ratio 자동 업데이트 및 동기화 로직)
+* *app/views/settings/_tx_advanced_issue_status.html.erb*: 플러그인 설정 UI
+
+=== 성능 최적화
+
+이슈 상태 목록은 5분간 캐시됩니다:
+
+  # TxAdvancedIssueStatusHelper.all_issue_statuses
+  # 5분마다 자동으로 새로고침되는 캐시
+
+== 플러그인 설정
+
+관리 > 플러그인 > Redmine Tx Advanced Issue Status에서 다음 옵션을 설정할 수 있습니다:
+
+* *enable_hybrid_logic*: 이슈 상태에 따른 완료 비율 자동 업데이트 (기본값: true)
+* *enable_auto_sync_target_version*: 부모 이슈 버전 변경 시 자식 이슈 버전 동기화 (기본값: false)
+* *enable_auto_sync_priority*: 부모 이슈 중요도 변경 시 자식 이슈 중요도 동기화 (기본값: false)
+* *enable_auto_sync_tag*: 부모 이슈 태그 변경 시 자식 이슈 태그 동기화 (기본값: false)
+* *enable_parent_auto_update*: 자식 이슈 시작 시 부모 이슈 자동 시작 (기본값: false)
+
+== 주의사항
+
+1. *레드마인 전역 설정*: "이슈 상태에 따른 완료율 계산" 옵션을 꺼야 이 플러그인이 정상 작동합니다.
+2. *부모-자식 관계*: 부모 이슈는 자식 이슈의 완료 비율에 따라 자동 계산되므로, 상태 변경 시 완료 비율이 자동으로 업데이트되지 않습니다.
+3. *태그 동기화*: enable_auto_sync_tag 기능은 redmine_tags 플러그인이 설치되어 있어야 작동합니다.
+
+== 의존성
+
+이 플러그인은 독립적으로 작동하며 다른 플러그인에 의존하지 않습니다.
+
+== 개발 가이드라인
+
+=== 코드 스타일
+* Ruby on Rails 규칙을 따릅니다
+* 주석은 한국어로 작성되어 있습니다
+
+=== 테스트
+
+  # Redmine 루트 디렉토리에서 실행
+  bundle exec rake test:plugins:redmine_tx_advanced_issue_status
+
+== 작성자
+
+Author: KiHyun Kang
