@@ -3,14 +3,15 @@ module TxAdvancedIssueStatusIssueStatusPatch
   extend ActiveSupport::Concern
 
   included do
-    # 'stage' 속성을 안전한 속성 목록에 추가합니다.
+    # 'stage', 'is_paused' 속성을 안전한 속성 목록에 추가합니다.
     safe_attributes(
       'name',
       'description',
       'is_closed',
       'position',
       'default_done_ratio',
-      'stage')
+      'stage',
+      'is_paused')
   end
 
   def stage_name
@@ -113,9 +114,16 @@ module TxAdvancedIssueStatusIssueStatusPatch
     def completed_ids
       TxAdvancedIssueStatusHelper.all_issue_statuses.select{ |status| status.is_completed? }.map(&:id)
     end
-    
 
-    
+    def paused_ids
+      TxAdvancedIssueStatusHelper.all_issue_statuses.select{ |status| status.is_paused? }.map(&:id)
+    end
+
+    def is_paused?( status_id )
+      status = TxAdvancedIssueStatusHelper.all_issue_statuses.find { |s| s.id == status_id }
+      status ? status.is_paused? : false
+    end
+
     def get_name( status_id )
       is = TxAdvancedIssueStatusHelper.all_issue_statuses.find { |issue_status| issue_status.id == status_id }
       is ? is.name : nil

@@ -2,6 +2,7 @@
 en:
   # my_label: "My label"
   field_stage: "Stage"
+  field_is_paused: "Is Paused"
 
   label_stage_discarded: "Discarded"
   label_stage_postponed: "Postponed"
@@ -14,6 +15,7 @@ en:
   label_stage_completed: "Completed"
 ko:
   field_stage: "단계"
+  field_is_paused: "일시정지"
   label_stage_discarded: "폐기"
   label_stage_postponed: "보류"
   label_stage_new: "신규"

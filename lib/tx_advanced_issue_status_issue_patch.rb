@@ -167,6 +167,10 @@ module TxAdvancedIssueStatusIssuePatch
     TxAdvancedIssueStatusHelper.is_completed_stage?( IssueStatus.get_stage( status_id ) )
   end
 
+  def is_paused?()
+    IssueStatus.is_paused?( status_id )
+  end
+
   private
 
   def log_debug_red(message)
