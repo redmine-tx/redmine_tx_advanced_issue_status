@@ -90,6 +90,7 @@ module TxAdvancedIssueStatusIssuePatch
           log_debug_red "Redmine Tx Advanced Issue Status: parent_id #{self.parent_id}"
           if parent.status_id == nil || parent.status.default_done_ratio.to_i == 0 then
             log_debug_red "Redmine Tx Advanced Issue Status: parent.status_id #{parent.status_id}"
+            parent.init_journal(User.current)  # 저널 생성을 위해 추가
             parent.status_id = self.status_id
             log_debug_red "Redmine Tx Advanced Issue Status: parent.status_id #{parent.status_id}"
             parent.save
