@@ -13,6 +13,9 @@ en:
   label_stage_implemented: "Implemented"
   label_stage_qa: "QA"
   label_stage_completed: "Completed"
+
+  label_stage_in_progress_filter: "In Progress"
+  label_stage_implemented_or_above: "Implemented+"
 ko:
   field_stage: "단계"
   field_is_paused: "일시정지"
@@ -25,3 +28,6 @@ ko:
   label_stage_implemented: "구현끝"
   label_stage_qa: "QA"
   label_stage_completed: "종결"
+
+  label_stage_in_progress_filter: "구현중"
+  label_stage_implemented_or_above: "구현끝+"

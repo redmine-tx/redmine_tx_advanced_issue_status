@@ -15,7 +15,7 @@ module TxAdvancedIssueStatusIssueStatusPatch
   end
 
   def stage_name
-    l(TxHybridDoneratioHelper.STAGE_OPTIONS[self.stage])
+    l(TxAdvancedIssueStatusHelper::STAGE_OPTIONS[self.stage])
   end
 
   def is_new?
