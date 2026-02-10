@@ -1,8 +1,28 @@
 class TxAdvancedIssueStatusHook < Redmine::Hook::ViewListener
   def view_layouts_base_html_head(context)
-    if context[:request].params[:controller] == 'issue_statuses' then
-      if context[:request].params[:action] == 'index' then
-        o = <<EOS
+    # 커스텀 연산자 "wk", "im"을 값 불필요 연산자로 등록 (콤보박스 숨김)
+    o = <<~JS
+      <script>
+        (function() {
+          var origToggleOperator = window.toggleOperator;
+          if (origToggleOperator) {
+            window.toggleOperator = function(field) {
+              var fieldId = field.replace('.', '_');
+              var operator = $("#operators_" + fieldId).val();
+              if (operator === "wk" || operator === "im") {
+                enableValues(field, []);
+              } else {
+                origToggleOperator(field);
+              }
+            };
+          }
+        })();
+      </script>
+    JS
+
+    if context[:request].params[:controller] == 'issue_statuses'
+      if context[:request].params[:action] == 'index'
+        o += <<EOS
         <script>
           var stage_values = #{ context[:controller].instance_variable_get(:@issue_statuses).map { |issue_status|  issue_status.stage ? l(TxAdvancedIssueStatusHelper::STAGE_OPTIONS[issue_status.stage]) : '' }.to_json };
           var is_paused_values = #{ context[:controller].instance_variable_get(:@issue_statuses).map { |issue_status| issue_status.is_paused? }.to_json };
@@ -18,11 +38,10 @@ class TxAdvancedIssueStatusHook < Redmine::Hook::ViewListener
           });
         </script>
 EOS
-        o
-      elsif ['edit', 'new'].include?(context[:request].params[:action]) then
+      elsif ['edit', 'new'].include?(context[:request].params[:action])
         issue_status = context[:controller].instance_variable_get(:@issue_status)
 
-        o = <<EOS
+        o += <<EOS
         <script>
           $(function() {
             var $select = $('<select>').attr('name', 'issue_status[stage]');
@@ -69,8 +88,9 @@ EOS
           });
         </script>
 EOS
-        o
       end
     end
+
+    o
   end
-end 
+end

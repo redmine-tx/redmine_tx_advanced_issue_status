@@ -22,9 +22,22 @@ module TxAdvancedIssueStatusQueryPatch
 
     alias_method :sql_for_field_without_stage, :sql_for_field
     alias_method :sql_for_field, :sql_for_field_with_stage
+
+    alias_method :validate_query_filters_without_stage, :validate_query_filters
+    alias_method :validate_query_filters, :validate_query_filters_with_stage
   end
 
-  def sql_for_field_with_stage(field, operator, value, db_table, db_field, is_custom_filter = false, assoc = nil)
+  def validate_query_filters_with_stage
+    # "wk", "im"은 값이 필요 없는 연산자이므로 검증 통과용 더미 값 설정
+    filters.each_key do |field|
+      if %w[wk im].include?(operator_for(field))
+        filters[field][:values] = ['1']
+      end
+    end
+    validate_query_filters_without_stage
+  end
+
+  def sql_for_field_with_stage(field, operator, value, db_table, db_field, is_custom_filter = false)
     if field == "status_id"
       case operator
       when "wk"
@@ -35,6 +48,6 @@ module TxAdvancedIssueStatusQueryPatch
           "(SELECT id FROM #{IssueStatus.table_name} WHERE stage >= 4)"
       end
     end
-    sql_for_field_without_stage(field, operator, value, db_table, db_field, is_custom_filter, assoc)
+    sql_for_field_without_stage(field, operator, value, db_table, db_field, is_custom_filter)
   end
 end
