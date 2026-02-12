@@ -27,15 +27,30 @@ class TxAdvancedIssueStatusHook < Redmine::Hook::ViewListener
           var stage_values = #{ context[:controller].instance_variable_get(:@issue_statuses).map { |issue_status|  issue_status.stage ? l(TxAdvancedIssueStatusHelper::STAGE_OPTIONS[issue_status.stage]) : '' }.to_json };
           var is_paused_values = #{ context[:controller].instance_variable_get(:@issue_statuses).map { |issue_status| issue_status.is_paused? }.to_json };
           $(function() {
+            var $table = $('table.issue_statuses');
+            if (!$table.length) return;
+
+            // 헤더: td.name(상태) 뒤에 단계, is_closed(완료) 앞에 일시정지
+            var $nameHeader = $table.find('thead th:first');
+            var $closedHeader = $table.find('thead th').filter(function() {
+              return $(this).text().trim() === '#{l(:field_is_closed)}';
+            });
+            if (!$nameHeader.length || !$closedHeader.length) return;
+
             var $stageHeader = $('<th>').text('#{l(:field_stage)}');
             var $pausedHeader = $('<th>').text('#{l(:field_is_paused)}');
-            $('.issue_statuses tr').slice(0).find('th:eq(0)').after($stageHeader);
-            $stageHeader.next().after($pausedHeader);
-            $('.issue_statuses tbody tr').slice(0).find('td:eq(0)').each(function(index, element) {
-              var $stageCell = $('<td>').text(stage_values[index]);
-              var $pausedCell = $('<td>').html(is_paused_values[index] ? '&#10003;' : '');
-              $(element).after($stageCell);
-              $stageCell.next().after($pausedCell);
+            $nameHeader.after($stageHeader);
+            $closedHeader.before($pausedHeader);
+
+            // 바디: td.name 뒤에 단계, td.description 앞(=완료상태 앞)에 일시정지
+            $table.find('tbody tr').each(function(index) {
+              var $row = $(this);
+              var $nameCell = $row.find('td.name');
+              var $descCell = $row.find('td.description');
+              if (!$nameCell.length || !$descCell.length) return;
+
+              $nameCell.after($('<td>').text(stage_values[index]));
+              $descCell.prev().before($('<td>').html(is_paused_values[index] ? '&#10003;' : ''));
             });
           });
         </script>
