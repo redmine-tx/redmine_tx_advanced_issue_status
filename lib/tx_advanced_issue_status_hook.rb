@@ -29,11 +29,13 @@ class TxAdvancedIssueStatusHook < Redmine::Hook::ViewListener
           $(function() {
             var $stageHeader = $('<th>').text('#{l(:field_stage)}');
             var $pausedHeader = $('<th>').text('#{l(:field_is_paused)}');
-            $('.issue_statuses tr').slice(0).find('th:eq(0)').after($pausedHeader).after($stageHeader);
+            $('.issue_statuses tr').slice(0).find('th:eq(0)').after($stageHeader);
+            $stageHeader.next().after($pausedHeader);
             $('.issue_statuses tbody tr').slice(0).find('td:eq(0)').each(function(index, element) {
               var $stageCell = $('<td>').text(stage_values[index]);
               var $pausedCell = $('<td>').html(is_paused_values[index] ? '&#10003;' : '');
-              $(element).after($pausedCell).after($stageCell);
+              $(element).after($stageCell);
+              $stageCell.next().after($pausedCell);
             });
           });
         </script>
@@ -84,7 +86,14 @@ EOS
 
             var $pausedP = $('<p>').append($pausedLabel, $hidden, $checkbox);
 
-            $('p label[for="issue_status_is_closed"]').parent().before($stageP).before($pausedP);
+            var $closedP = $('p label[for="issue_status_is_closed"]').parent();
+            var $doneRatioP = $('p label[for="issue_status_default_done_ratio"]').parent();
+            if ($doneRatioP.length) {
+              $doneRatioP.before($stageP);
+            } else {
+              $closedP.before($stageP);
+            }
+            $closedP.before($pausedP);
           });
         </script>
 EOS
