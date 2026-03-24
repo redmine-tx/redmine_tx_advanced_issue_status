@@ -126,7 +126,7 @@ module TxAdvancedIssueStatusIssuePatch
       end
     end
 
-    capture_previous_syncable_custom_field_values
+    prepare_syncable_custom_field_sync
 
     # 레드마인 코어의 상태 기반 진척도 계산이 켜져 있으면 코어 동작을 그대로 사용합니다.
     if !Issue.use_status_for_done_ratio? &&
@@ -180,12 +180,18 @@ module TxAdvancedIssueStatusIssuePatch
 
   private
 
-  def capture_previous_syncable_custom_field_values
+  def prepare_syncable_custom_field_sync
+    @syncable_custom_field_changes_pending = false
     @previous_syncable_custom_field_values = {}
+
     return unless id
+    return unless respond_to?(:custom_field_values_changed?) && custom_field_values_changed?
+    return unless children?
 
     syncable_fields = syncable_issue_custom_fields
     return if syncable_fields.empty?
+
+    @syncable_custom_field_changes_pending = true
 
     values_by_field_id = Hash.new { |hash, key| hash[key] = [] }
     CustomValue.where(
@@ -203,9 +209,9 @@ module TxAdvancedIssueStatusIssuePatch
   end
 
   def sync_selected_custom_fields_to_children
-    return unless children?
+    return unless @syncable_custom_field_changes_pending
 
-    syncable_fields = syncable_issue_custom_fields
+    syncable_fields = @syncable_issue_custom_fields || []
     return if syncable_fields.empty?
 
     previous_values = @previous_syncable_custom_field_values || {}
@@ -214,6 +220,10 @@ module TxAdvancedIssueStatusIssuePatch
     end
     return if changed_fields.empty?
 
+    current_values = changed_fields.each_with_object({}) do |field, values|
+      values[field.id] = normalized_current_custom_field_value(field)
+    end
+
     children.each do |child|
       child_updates = {}
       child_field_ids = child.available_custom_fields.map(&:id)
@@ -221,7 +231,7 @@ module TxAdvancedIssueStatusIssuePatch
       changed_fields.each do |field|
         next unless child_field_ids.include?(field.id)
 
-        new_value = normalized_current_custom_field_value(field)
+        new_value = current_values[field.id]
         next if normalize_custom_field_value(field, child.custom_field_value(field)) == new_value
 
         child_updates[field.id.to_s] = serialize_custom_field_value(field, new_value)
