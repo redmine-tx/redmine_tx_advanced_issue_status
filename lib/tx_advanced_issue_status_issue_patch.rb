@@ -67,6 +67,8 @@ module TxAdvancedIssueStatusIssuePatch
       end
     end
 
+    sync_selected_custom_fields_to_children
+
     # 이슈가 시작 상태가 된 경우 부모 이슈도 시작 상태로 바꿈
     if previous_changes.include?('status_id') then      
       if Setting.plugin_redmine_tx_advanced_issue_status['enable_parent_auto_update'] then
@@ -124,8 +126,12 @@ module TxAdvancedIssueStatusIssuePatch
       end
     end
 
-    # 부모 이슈가 아닐 경우 이슈 상태에 따른 진척도를 업데이트 합니다.
-    if status_id_changed? && Setting.plugin_redmine_tx_advanced_issue_status['enable_hybrid_logic'] then        
+    capture_previous_syncable_custom_field_values
+
+    # 레드마인 코어의 상태 기반 진척도 계산이 켜져 있으면 코어 동작을 그대로 사용합니다.
+    if !Issue.use_status_for_done_ratio? &&
+       status_id_changed? &&
+       Setting.plugin_redmine_tx_advanced_issue_status['enable_hybrid_logic'] then
       return if children?
 
       new_done_ratio = status.default_done_ratio
@@ -173,6 +179,86 @@ module TxAdvancedIssueStatusIssuePatch
   end
 
   private
+
+  def capture_previous_syncable_custom_field_values
+    @previous_syncable_custom_field_values = {}
+    return unless id
+
+    syncable_fields = syncable_issue_custom_fields
+    return if syncable_fields.empty?
+
+    values_by_field_id = Hash.new { |hash, key| hash[key] = [] }
+    CustomValue.where(
+      customized_type: self.class.name,
+      customized_id: id,
+      custom_field_id: syncable_fields.map(&:id)
+    ).find_each do |custom_value|
+      values_by_field_id[custom_value.custom_field_id] << custom_value.value
+    end
+
+    syncable_fields.each do |field|
+      raw_value = field.multiple? ? values_by_field_id[field.id] : values_by_field_id[field.id].first
+      @previous_syncable_custom_field_values[field.id] = normalize_custom_field_value(field, raw_value)
+    end
+  end
+
+  def sync_selected_custom_fields_to_children
+    return unless children?
+
+    syncable_fields = syncable_issue_custom_fields
+    return if syncable_fields.empty?
+
+    previous_values = @previous_syncable_custom_field_values || {}
+    changed_fields = syncable_fields.select do |field|
+      previous_values[field.id] != normalize_custom_field_value(field, custom_field_value(field))
+    end
+    return if changed_fields.empty?
+
+    children.each do |child|
+      child_updates = {}
+      child_field_ids = child.available_custom_fields.map(&:id)
+
+      changed_fields.each do |field|
+        next unless child_field_ids.include?(field.id)
+
+        new_value = normalized_current_custom_field_value(field)
+        next if normalize_custom_field_value(field, child.custom_field_value(field)) == new_value
+
+        child_updates[field.id.to_s] = serialize_custom_field_value(field, new_value)
+      end
+
+      next if child_updates.empty?
+
+      child.custom_field_values = child_updates
+      child.save
+    end
+  end
+
+  def syncable_issue_custom_fields
+    @syncable_issue_custom_fields ||= available_custom_fields.select do |field|
+      field.is_a?(IssueCustomField) &&
+        field.respond_to?(:sync_to_children_on_parent_change?) &&
+        field.sync_to_children_on_parent_change? &&
+        field.field_format != 'attachment'
+    end
+  end
+
+  def normalized_current_custom_field_value(field)
+    normalize_custom_field_value(field, custom_field_value(field))
+  end
+
+  def normalize_custom_field_value(field, value)
+    if field.multiple?
+      Array(value).map(&:to_s).reject(&:blank?).sort
+    else
+      normalized = value.is_a?(Array) ? value.first : value
+      normalized.present? ? normalized.to_s : nil
+    end
+  end
+
+  def serialize_custom_field_value(field, value)
+    field.multiple? ? Array(value) : value
+  end
 
   def log_debug_red(message)
     Rails.logger.debug "\e[31m#{message}\e[0m"

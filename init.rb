@@ -19,12 +19,14 @@ end
 Rails.application.config.after_initialize do
   require_dependency File.expand_path('lib/tx_advanced_issue_status_helper', File.dirname(__FILE__))
   require_dependency File.expand_path('lib/tx_advanced_issue_status_hook', File.dirname(__FILE__))
+  require_dependency File.expand_path('lib/tx_advanced_issue_status_issue_custom_field_patch', File.dirname(__FILE__))
   require_dependency File.expand_path('lib/tx_advanced_issue_status_issue_patch', File.dirname(__FILE__))
   require_dependency File.expand_path('lib/tx_advanced_issue_status_issue_status_patch', File.dirname(__FILE__))
   require_dependency File.expand_path('lib/tx_advanced_issue_status_query_patch', File.dirname(__FILE__))
 
   ApplicationController.helper TxAdvancedIssueStatusHelper
   Issue.send(:include, TxAdvancedIssueStatusIssuePatch)
+  IssueCustomField.send(:include, TxAdvancedIssueStatusIssueCustomFieldPatch)
   IssueStatus.send(:include, TxAdvancedIssueStatusIssueStatusPatch)
   Query.send(:include, TxAdvancedIssueStatusQueryPatch)
 end

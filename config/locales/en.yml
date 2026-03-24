@@ -3,6 +3,7 @@ en:
   # my_label: "My label"
   field_stage: "Stage"
   field_is_paused: "Is Paused"
+  field_sync_to_children_on_parent_change: "Sync To Children On Parent Change"
 
   label_stage_discarded: "Discarded"
   label_stage_postponed: "Postponed"
@@ -16,9 +17,11 @@ en:
 
   label_stage_in_progress_filter: "In Progress"
   label_stage_implemented_or_above: "Implemented+"
+  text_sync_to_children_on_parent_change_info: "When this custom field changes on a parent issue, copy the same value to child issues that use this field."
 ko:
   field_stage: "단계"
   field_is_paused: "일시정지"
+  field_sync_to_children_on_parent_change: "부모 변경 시 자식에게도 적용"
   label_stage_discarded: "폐기"
   label_stage_postponed: "보류"
   label_stage_new: "신규"
@@ -31,3 +34,4 @@ ko:
 
   label_stage_in_progress_filter: "구현중"
   label_stage_implemented_or_above: "구현끝+"
+  text_sync_to_children_on_parent_change_info: "부모 이슈에서 이 커스텀 필드 값이 바뀌면, 같은 필드를 사용하는 자식 이슈에도 같은 값을 적용합니다."

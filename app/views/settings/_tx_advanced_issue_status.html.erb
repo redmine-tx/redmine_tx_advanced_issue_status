@@ -1,6 +1,11 @@
 <p>
   <label for="settings_enable_hybrid_logic">상태에 따른 진척도 업데이트 활성화</label>
-  <%= check_box_tag 'settings[enable_hybrid_logic]', true, @settings['enable_hybrid_logic'] %>
+  <%= check_box_tag 'settings[enable_hybrid_logic]', true, @settings['enable_hybrid_logic'], disabled: Issue.use_status_for_done_ratio? %>
+  <% if Issue.use_status_for_done_ratio? %>
+    <br><span style="color: #d33; font-size: 0.9em; margin-left: 20px;">
+      레드마인의 설정/일감 추적에서 일감의 진척도 계산 방법을 수동으로 변경해야 이 옵션을 사용할 수 있습니다.
+    </span>
+  <% end %>
 </p>
 
 <p>
