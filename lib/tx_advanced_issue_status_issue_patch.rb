@@ -8,41 +8,6 @@ module TxAdvancedIssueStatusIssuePatch
   end
 
   def after_update_done_ratio
-
-    if Setting.plugin_redmine_tx_advanced_issue_status['enable_auto_sync_tag'] then
-    #5.times { puts '************************************' }
-      #pp "PREV TAGS:#{@prev_tag_list.to_s}" if @prev_tag_list.present?
-      #pp "TAGS:#{tag_list.to_s}" if tag_list.present?
-      # @prev_tag_list가 nil인 경우 빈 배열로 처리 (새로운 이슈 생성 시)
-      prev_tags = @prev_tag_list || []
-      current_tags = tag_list || []
-      
-      if prev_tags != current_tags then
-        added_tags = current_tags - prev_tags
-        removed_tags = prev_tags - current_tags
-        #pp "ADDED TAGS:#{added_tags.to_s}" if added_tags.present?
-        #pp "REMOVED TAGS:#{removed_tags.to_s}" if removed_tags.present?
-        if children? then
-          children.each do |child|
-            old_child_tags = child.tag_list.clone
-            child.tag_list -= removed_tags
-            child.tag_list += added_tags
-            child.tag_list.uniq!
-            
-            # 공통 메소드를 사용하여 저널 기록
-            RedmineupTags::JournalHelper.add_tag_change_to_journal(
-              child, 
-              old_child_tags.join(', '), 
-              child.tag_list.join(', ')
-            )
-            
-            child.save
-          end
-        end
-      end
-      #5.times { puts '************************************' }
-    end
-
     # 이슈 버전 변경 시 자식 이슈의 버전도 변경
     if previous_changes.include?('fixed_version_id') then
       if Setting.plugin_redmine_tx_advanced_issue_status['enable_auto_sync_target_version'] then
@@ -103,29 +68,6 @@ module TxAdvancedIssueStatusIssuePatch
   end
 
   def before_update_done_ratio
-
-    
-    if Setting.plugin_redmine_tx_advanced_issue_status['enable_auto_sync_tag'] then
-      if self.id then
-
-        # TODO  이거 엄청 느림... T_T 대안을 찾아야 한다.
-
-        #5.times { puts '--------------------------------' }
-        #pp "TAGS:#{tag_list.to_s}"
-        prev_issue = Issue.where(id: self.id).first
-        if prev_issue then
-          #pp "PREV TAGS:#{prev_issue.tag_list.to_s}"
-          @prev_tag_list = prev_issue.tag_list
-        end
-        #5.times { puts '--------------------------------' }
-      else
-        @prev_tag_list = nil
-        #5.times { puts '--------------------------------' }
-        #pp "TAG CHANGED BUT NO ID"
-        #5.times { puts '--------------------------------' }
-      end
-    end
-
     prepare_syncable_custom_field_sync
 
     # 레드마인 코어의 상태 기반 진척도 계산이 켜져 있으면 코어 동작을 그대로 사용합니다.

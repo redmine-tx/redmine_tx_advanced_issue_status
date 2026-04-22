@@ -11,7 +11,6 @@ Redmine::Plugin.register :redmine_tx_advanced_issue_status do
       'enable_hybrid_logic' => true,
       'enable_auto_sync_target_version' => false,
       'enable_auto_sync_priority' => false,
-      'enable_auto_sync_tag' => false,
       'enable_parent_auto_update' => false
     }, partial: 'settings/tx_advanced_issue_status'
 end

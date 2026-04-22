@@ -77,7 +77,6 @@ Redmine 기본 이슈 상태는 `is_closed` (true/false)만 제공하여 진행 
 | `enable_parent_auto_update` | false | 자식 시작 시 부모 상태 자동 변경 |
 | `enable_auto_sync_target_version` | false | 목표버전 부모→자식 동기화 |
 | `enable_auto_sync_priority` | false | 우선순위 부모→자식 동기화 |
-| `enable_auto_sync_tag` | false | 태그 부모→자식 동기화 (느림 주의) |
 
 ## DB 스키마 변경
 
@@ -99,13 +98,11 @@ bundle exec rake redmine:plugins:test NAME=redmine_tx_advanced_issue_status
 
 - Redmine 코어 (`Issue`, `IssueStatus`, `Setting`)
 - `redmine_tx_0_base` — 공용 헬퍼 (간접 의존)
-- `redmineup_tags` — 태그 동기화 기능 사용 시 필요 (`RedmineupTags::JournalHelper`)
 
 ## 개발 시 주의사항
 
 - 레드마인 전역 설정에서 "이슈 상태에 따른 진척도"를 **꺼야** hybrid logic이 정상 동작
 - `all_issue_statuses` 캐시는 5분 TTL — IssueStatus 변경 후 즉시 반영 안 될 수 있음
-- 태그 동기화(`enable_auto_sync_tag`)는 자식마다 DB 조회하므로 성능 이슈 있음
 - Hook에서 JS를 문자열로 직접 생성하므로 XSS에 주의 (현재 i18n 값만 사용)
 - `is_implemented?`는 `stage >= 4`이므로 QA(5), COMPLETED(6)도 포함됨
 - 커스텀 라우트 없음 — 모든 UI 확장은 Hook 기반
